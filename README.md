@@ -42,6 +42,11 @@ ScanSense is an OCR Assistive Python-based project that provides a guidance syst
     ```bash
     python3 scansense.py -debug=True
     ```
+## Demonstration
+
+   <p align="center">
+      <img src="https://github.com/samaypashine/ScanSense/blob/main/outputs/1688876105.9406705.jpg" />
+   </p>
 
 ## Contribution
 
