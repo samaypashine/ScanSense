@@ -2,7 +2,7 @@
 #  * @file scansense.py 
 #  * @author Samay Pashine
 #  * @brief Code to guide user to keep the complete document in the frame by detecting edges.
-#  * @version 1.0
+#  * @version 1.1
 #  * @date 2023-07-07
 #  * 
 #  * @copyright Copyright (c) 2023
@@ -16,7 +16,7 @@ import logging
 import numpy as np
 from camera import *
 from datetime import datetime
-from utils import get_max_contour
+from utils import get_max_contour, calculate_segment_distance
 
 
 def check_violations(points, shape, margin=10):
@@ -61,7 +61,7 @@ def check_violations(points, shape, margin=10):
         if flag:
             violation_count += 1
         
-    if violation_count > 2:
+    if violation_count > 4:
         return ['TOP']
     else:
         return violation_list
@@ -87,6 +87,9 @@ if __name__ == '__main__':
     translucent_color = [230, 210, 80]
     alpha = 0.5
     fps_history = list()
+    dist_x, dist_y = 0, 0
+    segments = 20
+    intermediate_dist = 20
 
     img_dir = os.sep.join([os.curdir, 'images'])
     output_dir = os.sep.join([os.curdir, 'outputs'])
@@ -106,12 +109,16 @@ if __name__ == '__main__':
             logging.info(f'Aspect Ratio         : {aspect_ratio}')
             logging.info(f'Pixel Boundary       : {pixel_boundary}')
 
-            # Creating an artifical pixel boudnary to assist in locating the document corners.
-            img = cv2.line(img, (0, pixel_boundary), (0, img.shape[0] - pixel_boundary), color=[255, 255, 255], thickness=5)
-            img = cv2.line(img, (img.shape[1], pixel_boundary), (img.shape[1], img.shape[0] - pixel_boundary), color=[255, 255, 255], thickness=5)
-            img = cv2.line(img, (pixel_boundary, 0), (img.shape[1] - pixel_boundary, 0), color=[255, 255, 255], thickness=5)
-            img = cv2.line(img, (pixel_boundary, img.shape[0]), (img.shape[1] - pixel_boundary, img.shape[0]), color=[255, 255, 255], thickness=5)
+            # Creating an artifical pixel boundary to assist in locating the document corners.
+            if dist_x == 0 and dist_y == 0:
+                dist_x, dist_y, inter_x, inter_y =  calculate_segment_distance(img.shape, segments=segments, intermediate_dist=intermediate_dist)
             
+            for i in range(1, segments):
+                img = cv2.line(img, (0, int((inter_y * i) + (dist_y * (i-1)))), (0, int((inter_y * i) + (dist_y * i))), color=[255, 255, 255], thickness=5)
+                img = cv2.line(img, (img.shape[1], int((inter_y * i) + (dist_y * (i-1)))), (img.shape[1], int((inter_y * i) + (dist_y * i))), color=[255, 255, 255], thickness=5)
+                img = cv2.line(img, (int((inter_x * i) + (dist_x * (i-1))), 0), (int((inter_x * i) + (dist_x * i)), 0), color=[255, 255, 255], thickness=5)
+                img = cv2.line(img, (int((inter_x * i) + (dist_x * (i-1))), img.shape[0]), (int((inter_x * i) + (dist_x * i)), img.shape[0]), color=[255, 255, 255], thickness=5)
+
             # Pre-processing the image, and detecting the edges in the image.
             img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             img_blur = cv2.GaussianBlur(img_gray, (5, 5), 1)
@@ -124,7 +131,7 @@ if __name__ == '__main__':
 
             # Finding the contours, and selecting the largest contour.
             contours, hierarchy = cv2.findContours(img_eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            contours, max_area = get_max_contour(contours)            
+            contours, max_area = get_max_contour(contours, threshold_area=15000)            
             
             # Creating a convex hull to get the shortest polygon for corners.
             points = np.array(contours, dtype=np.int32)
@@ -145,14 +152,14 @@ if __name__ == '__main__':
             logging.info(f'Max Area             : {max_area}')
             logging.info(f'Action               : {action}')
             logging.info(f'FPS                  : {np.mean(fps_history)}')
+            if len(action) == 0:
+                logging.info('---------------------------- CAPTURE THE FRAME AND USE IT FOR OCR. ----------------------------')
             logging.info('-----------------------------------------------------------------------------------------------')
 
             cv2.imwrite(os.sep.join([output_dir, "{}.jpg".format(time.time())]), img)
             cv2.imshow('Display', img)
             cv2.waitKey(40)
 
-            if len(action) == 0:
-                logging.info('CAPTURE THE FRAME AND USE IT FOR OCR.')
         except Exception as e:
             if DEBUG:
                 logging.error(f'Error Code : {e}')
