@@ -158,8 +158,9 @@ if __name__ == '__main__':
 
             cv2.imwrite(os.sep.join([output_dir, "{}.jpg".format(time.time())]), img)
             cv2.imshow('Display', img)
-            cv2.waitKey(40)
-
+            key = cv2.waitKey(200)
+            if key == ord('q'):
+                break
         except Exception as e:
             if DEBUG:
                 logging.error(f'Error Code : {e}')
