@@ -61,7 +61,7 @@ def check_violations(points, shape, margin=10):
         if flag:
             violation_count += 1
         
-    if violation_count > 4:
+    if violation_count > 3:
         return ['TOP']
     else:
         return violation_list
