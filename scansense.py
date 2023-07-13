@@ -61,7 +61,7 @@ def check_violations(points, shape, margin=10):
         if flag:
             violation_count += 1
         
-    if violation_count > 3:
+    if violation_count > 3 or ('LEFT' in violation_list and 'RIGHT' in violation_list) or ('UP' in violation_list and 'DOWN' in violation_list):
         return ['TOP']
     else:
         return violation_list
@@ -95,15 +95,15 @@ if __name__ == '__main__':
     output_dir = os.sep.join([os.curdir, 'outputs'])
     os.makedirs(output_dir, exist_ok=True)
 
-    # for img_name in os.listdir(os.sep.join([img_dir])):
-    while True:
+    for img_name in os.listdir(os.sep.join([img_dir])):
+    # while True:
         try:
             # Capturing the frame.
             start_time = time.time()
-            img = cap.grab_frame()
-            # img = cv2.imread(os.sep.join([img_dir, img_name]))
+            # img = cap.grab_frame()
+            img = cv2.imread(os.sep.join([img_dir, img_name]))
             aspect_ratio = img.shape[1] / img.shape[0]
-            # img = cv2.resize(img, (480, int(480 / aspect_ratio)))            
+            img = cv2.resize(img, (480, int(480 / aspect_ratio)))            
 
             logging.info(f'Image Dimensions     : ({img.shape[1]}, {img.shape[0]})')
             logging.info(f'Aspect Ratio         : {aspect_ratio}')
@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
             cv2.imwrite(os.sep.join([output_dir, "{}.jpg".format(time.time())]), img)
             cv2.imshow('Display', img)
-            key = cv2.waitKey(200)
+            key = cv2.waitKey(0)
             if key == ord('q'):
                 break
         except Exception as e:
